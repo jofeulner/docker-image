@@ -79,13 +79,19 @@ RUN <<EOF
 	fi
 	if [ -n "${tarball}" ]; then
 		apt-get update
-		apt-get install -y --no-install-recommends zstd
+		apt-get install -y --no-install-recommends zstd \
+			libslirp0 libiscsi7 libaio1t64 liburing2 libjack0
 		wget ${WGET_ARGS} "${url}"
 		mkdir -p /opt/toolchains/hexagon
 		tar --use-compress-program=unzstd --strip-components=1 -xf "${tarball}" -C /opt/toolchains/hexagon
 		rm "${tarball}"
 		ln -s /opt/toolchains/hexagon/${subdir} /opt/toolchains/hexagon/host
+		multiarch="$(dpkg-architecture -qDEB_HOST_MULTIARCH)"
+		ln -s "/usr/lib/${multiarch}/libaio.so.1t64" "/usr/lib/${multiarch}/libaio.so.1"
 		/opt/toolchains/hexagon/host/bin/clang --version
+		if [ "${HOSTTYPE}" = "x86_64" ]; then
+			/opt/toolchains/hexagon/host/bin/qemu-system-hexagon --version
+		fi
 		apt-get clean
 		rm -rf /var/lib/apt/lists/*
 	fi
